@@ -1,3 +1,5 @@
+# TODO: folder selected error E D drive 
+# TODO: folder selected error E D drive to gui_auto_dir2.py
 import copy
 import glob
 import functools
@@ -32,7 +34,7 @@ class Application(ttk.Notebook):
         tab2 = ttk.Frame(self.master, style='new.TFrame')
 
         self.add(tab1, text='自動フォルダ作成')
-        self.add(tab2, text='1つのPDFファイルにまとめる')
+        self.add(tab2, text='PDF一括結合')
 
         Tab1(master=tab1)
         Tab2(master=tab2)
@@ -48,14 +50,13 @@ class Application(ttk.Notebook):
     def dirdialog_clicked(self, entry):
         iDir = os.path.abspath(os.path.dirname(sys.argv[0]))
         iDir_path = filedialog.askdirectory(initialdir=iDir)
-        print(iDir_path)
         entry.set(iDir_path)
 
 class Tab1(Frame, Application):
 
     def __init__(self, master=None):
 
-        self.list_items = ['会社A', '会社B', '会社C', '会社D', '会社E', '支店F', '支店G', '支店H', '支店I', '支店J']
+        self.list_items = ['A会社', 'B会社', 'C会社', 'D会社', 'E会社', 'F支店', 'G支店', 'H支店', 'I支店', 'J支店']
         num_list = len(self.list_items)
         self.mkdir_list = []
 
@@ -176,7 +177,7 @@ class Tab1(Frame, Application):
         frame3.grid(row=4,  column=1, sticky='we')
 
         # 作成ボタンの設置
-        create_dir_button = ttk.Button(frame3, text='作成', command=lambda: self.clicked_mkdir2())
+        create_dir_button = ttk.Button(frame3, text='作成', command=lambda: self.clicked())
         create_dir_button.pack(fill='x', padx=50, side='left')
 
         # キャンセルボタンの設置
@@ -192,6 +193,7 @@ class Tab1(Frame, Application):
             self.ch_items_list[irow] = False
         self.mkdir_list = [self.list_items[i] for i in range(len(self.list_items)) if self.ch_items_list[i] == True]
 
+
     # スクロール可能な範囲を指定
     def mouse_y_scroll(self, event):
         if event.delta > 0:
@@ -200,7 +202,7 @@ class Tab1(Frame, Application):
             self.canvas.yview_scroll(1, 'units')
 
     # フォルダ作成関数
-    def clicked_mkdir2(self):
+    def clicked(self):
         dir_path = self.entry.get()
         checked_num = self.v1.get()
         checked_date = self.v2.get()
@@ -208,13 +210,19 @@ class Tab1(Frame, Application):
         if not dir_path:
             messagebox.showerror('エラー', 'パスの指定がありません')
             return
+        elif not dir_path[:3] == 'C:/':
+            messagebox.showerror('エラー', 'パスの入力が違います!')
+            return
+        else:
+            pass
+
         try:
             msg = messagebox.askyesno(
                 '確認', 
                 '作成先のパスはあっていますか?\n' +
-                '--------------------------------\n' +
+                '-------------------------------------------------------------------------------\n' +
                 '{}\n'.format(dir_path) + 
-                '--------------------------------\n' +
+                '-------------------------------------------------------------------------------\n' +
                 '作成しますがよろしいですか?')
             if msg == True:
                 if not self.mkdir_list:
@@ -300,12 +308,13 @@ class Tab1(Frame, Application):
 class Tab2(Frame, Application):
 
     def __init__(self, master=None):
+        super().__init__(master)
     # ========================================================================================================
         hs = ttk.Style()
         hs.configure('header.TFrame', background='white')
 
         # Tab1のFrame1の作成
-        frame1 = ttk.Frame(master, padding=10, relief='solid', style='header.TFrame')
+        frame1 = ttk.Frame(master, padding=(10, 10, 30, 10), relief='solid', style='header.TFrame')
         frame1.grid(row=0, column=1, sticky=W+E)
 
         # 「フォルダ参照」ラベルの作成
@@ -324,17 +333,27 @@ class Tab2(Frame, Application):
         dir_button = ttk.Button(frame1, text='参照', style='Length.TButton', command=lambda :self.dirdialog_clicked(self.entry))
         dir_button.pack(side=LEFT, padx=3)
     # ========================================================================================================
-
+        ms = ttk.Style()
+        ms.configure('main.TFrame',foreground='black', background='white', bd=5)
+        frame2 = ttk.Frame(master, padding=(10, 15, 0, 25), style='main.TFrame')
+        frame2.grid(row=2,  column=1, sticky='we')
+        label1 = Label(frame2, text="複数のPDFファイルを一括結合して1つのPDFファイルを生成します", background='white')
+        label1.grid(row=0, column=0)
+        label2 = Label(frame2, text="「参照ボタン」を押して複数入ったPDFファイルのフォルダを選択してください", background='white')
+        label2.grid(row=1, column=0)
+        label3 = Label(frame2, text="「実行ボタン」を押してどこにPDFファイルを保存するかを選択してください", background='white')
+        label3.grid(row=2, column=0)
     # ========================================================================================================
-        style = ttk.Style()
-        style.configure('footer.TFrame',foreground='black', background='white', bd=5)
+        fs = ttk.Style()
+        fs.configure('footer.TFrame',foreground='black', background='white', bd=5)
         
         # Tab2のFrame3の作成
         frame3 = ttk.Frame(master, padding=(0, 15, 0, 25), style='footer.TFrame')
-        frame3.grid(row=4,  column=1, sticky='we')
+        frame3.place(x=10, y=350)
+        # frame3.grid(row=6,  column=1, sticky='we')
 
         # 実行ボタンの設置
-        create_dir_button = ttk.Button(frame3, text='作成', command=lambda :super(Tab2, self).dirdialog_clicked(self.entry))
+        create_dir_button = ttk.Button(frame3, text='実行', command=lambda :self.clicked(master))
         create_dir_button.pack(fill='x', padx=50, side='left')
 
         # キャンセルボタンの設置
@@ -342,10 +361,70 @@ class Tab2(Frame, Application):
         cancel_button.pack(fill='x', padx=35, side='left')
     # ========================================================================================================
 
-    def clicked_mkdir2(self, master):
-        frame2 = ttk.Frame(master, padding=(0, 15, 0, 25), style='footer.TFrame')
+    def clicked(self, master):
+        dir_path = self.entry.get()     
+        if not dir_path:
+            messagebox.showerror('エラー', 'パスの指定がありません')
+            return
+
+        absPath = os.path.abspath(os.path.dirname(__file__))
+        messagebox.showinfo('PDF一括結合プログラム','PDFの保存先を選択してください!')
+        dirPath = filedialog.askdirectory(initialdir = absPath)
+        print(dirPath)
+
+
+        file_collection = dir_path + '/' + '*.pdf'
+        filepath = sorted(glob.glob(file_collection))
+
+        # フォルダ内のPDFファイルのパスの一覧
+        fileslist = [dir_path + '/'+ os.path.basename(f) for f in filepath]
+        marge_fileslist = [os.path.basename(f) for f in filepath]
+        total_pages = 0
+
+        try:
+            # １つのPDFファイルにまとめる
+            pdf_writer = PyPDF2.PdfFileWriter()
+            for pdf_file in fileslist:
+                pdf_reader = PyPDF2.PdfFileReader(str(pdf_file))
+                num_pages = pdf_reader.getNumPages()
+                total_pages += num_pages
+                for i in range(pdf_reader.getNumPages()):
+                    pdf_writer.addPage(pdf_reader.getPage(i))
+        except Exception:
+            return
+
+        print('総ページ数 :', total_pages)
+        print('総ファイル数 :', len(marge_fileslist))
+        # print('以下のパスにPDFファイルが生成されました')
+        try:
+            # 保存ファイル名（先頭と末尾のファイル名で作成）
+            merged_file = marge_fileslist[0][:-4] + "-" + marge_fileslist[-1][:-4] + '.pdf'
+            merged_filePath = dirPath + '/'+ merged_file
+        except IndexError:
+            messagebox.showwarning('エラー', 'pdfファイルがありません\rPDFファイルがあるフォルダを選択してください')
+            return
+
+        # # 保存
+        # with open(merged_filePath, "wb") as f:
+        #     pdf_writer.write(f)
+        # print('保存できました!')
+
+        ms = ttk.Style()
+        ms.configure('main.TFrame',foreground='black', background='white', bd=5)
+        frame2 = ttk.Frame(master, padding=(10, 15, 0, 25), style='main.TFrame')
         frame2.grid(row=2,  column=1, sticky='we')
+        label1 = Label(frame2, text="複数のPDFファイルを一括結合して1つのPDFファイルを生成します", background='white')
+        label1.grid(row=0, column=0)
+        label2 = Label(frame2, text="「参照ボタン」を押して複数入ったPDFファイルのフォルダを選択してください", background='white')
+        label2.grid(row=1, column=0)
+        label3 = Label(frame2, text="「実行ボタン」を押してどこにPDFファイルを保存するかを選択してください", background='white')
+        label3.grid(row=2, column=0)
+        label4 = Label(frame2, text="***************************▼出力結果▼*******************************", background='white')
+        label4.grid(row=3, column=0)
+        label5 = Label(frame2, text="===========================▼出力結果▼===============================", background='white')
+        label5.grid(row=4, column=0)
         
+        return
 
 if __name__ == "__main__":
     win = Tk()
