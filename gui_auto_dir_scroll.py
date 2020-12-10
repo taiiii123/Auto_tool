@@ -1,10 +1,9 @@
-# TODO: folder selected error E D drive 
-# TODO: folder selected error E D drive to gui_auto_dir2.py
 import copy
 import glob
 import functools
 import os
 import PyPDF2
+import re
 import sys
 import time
 
@@ -207,11 +206,13 @@ class Tab1(Frame, Application):
         checked_num = self.v1.get()
         checked_date = self.v2.get()
 
+        match_head_path = re.search(r'^[A-Z]:/', dir_path)
+
         if not dir_path:
             messagebox.showerror('エラー', 'パスの指定がありません')
             return
-        elif not dir_path[:3] == 'C:/':
-            messagebox.showerror('エラー', 'パスの入力が違います!')
+        elif not match_head_path:
+            messagebox.showerror('エラー', '正しいパスを入力してください!')
             return
         else:
             pass
@@ -228,19 +229,19 @@ class Tab1(Frame, Application):
                 if not self.mkdir_list:
                     messagebox.showerror('エラー', '作成するフォルダ名が選択されていません')
                     return
-                elif checked_num == False and checked_date == False and self.mkdir_list: # オプションなし(フォルダ名)
+                elif (checked_num, checked_date) == (False, False) and self.mkdir_list: # オプションなし(フォルダ名)
                     mkdir_items_no_slc(dir_path, self.mkdir_list)
                     messagebox.showinfo('フォルダ作成情報', 'フォルダが作成されました')
                     return
-                elif checked_num == False and checked_date == True and self.mkdir_list: # オプション有り(フォルダ名 + 日付)
+                elif (checked_num, checked_date) == (False, True) and self.mkdir_list: # オプション有り(フォルダ名 + 日付)
                     mkdir_items_date(dir_path, self.mkdir_list)
                     messagebox.showinfo('フォルダ作成情報', 'フォルダが作成されました')
                     return
-                elif checked_num == True and checked_date == False and self.mkdir_list: # デフォルト(番号 + フォルダ名)
+                elif (checked_num, checked_date) == (True, False) and self.mkdir_list: # デフォルト(番号 + フォルダ名)
                     mkdir_items_num(dir_path, self.mkdir_list)
                     messagebox.showinfo('フォルダ作成情報', 'フォルダが作成されました')
                     return
-                elif checked_num == True and checked_date == True and self.mkdir_list: # オプションを有り(番号 + フォルダ名 + 日付)
+                elif (checked_num, checked_date) == (True, True) and self.mkdir_list: # オプションを有り(番号 + フォルダ名 + 日付)
                     mkdir_items_all_slc(dir_path, self.mkdir_list)
                     messagebox.showinfo('フォルダ作成情報', 'フォルダが作成されました')
                     return
@@ -370,15 +371,13 @@ class Tab2(Frame, Application):
         absPath = os.path.abspath(os.path.dirname(__file__))
         messagebox.showinfo('PDF一括結合プログラム','PDFの保存先を選択してください!')
         dirPath = filedialog.askdirectory(initialdir = absPath)
-        print(dirPath)
-
 
         file_collection = dir_path + '/' + '*.pdf'
         filepath = sorted(glob.glob(file_collection))
 
         # フォルダ内のPDFファイルのパスの一覧
         fileslist = [dir_path + '/'+ os.path.basename(f) for f in filepath]
-        marge_fileslist = [os.path.basename(f) for f in filepath]
+        merge_fileslist = [os.path.basename(f) for f in filepath]
         total_pages = 0
 
         try:
@@ -394,14 +393,14 @@ class Tab2(Frame, Application):
             return
 
         print('総ページ数 :', total_pages)
-        print('総ファイル数 :', len(marge_fileslist))
+        print('総ファイル数 :', len(merge_fileslist))
         # print('以下のパスにPDFファイルが生成されました')
         try:
             # 保存ファイル名（先頭と末尾のファイル名で作成）
-            merged_file = marge_fileslist[0][:-4] + "-" + marge_fileslist[-1][:-4] + '.pdf'
+            merged_file = merge_fileslist[0][:-4] + '-' + merge_fileslist[-1][:-4] + '.pdf'
             merged_filePath = dirPath + '/'+ merged_file
         except IndexError:
-            messagebox.showwarning('エラー', 'pdfファイルがありません\rPDFファイルがあるフォルダを選択してください')
+            messagebox.showwarning('エラー', 'PDFファイルがありません\rPDFファイルがあるフォルダを選択してください')
             return
 
         # # 保存
@@ -413,17 +412,23 @@ class Tab2(Frame, Application):
         ms.configure('main.TFrame',foreground='black', background='white', bd=5)
         frame2 = ttk.Frame(master, padding=(10, 15, 0, 25), style='main.TFrame')
         frame2.grid(row=2,  column=1, sticky='we')
-        label1 = Label(frame2, text="複数のPDFファイルを一括結合して1つのPDFファイルを生成します", background='white')
+        label1 = Label(frame2, text='複数のPDFファイルを一括結合して1つのPDFファイルを生成します', background='white')
         label1.grid(row=0, column=0)
-        label2 = Label(frame2, text="「参照ボタン」を押して複数入ったPDFファイルのフォルダを選択してください", background='white')
+        label2 = Label(frame2, text='「参照ボタン」を押して複数入ったPDFファイルのフォルダを選択してください', background='white')
         label2.grid(row=1, column=0)
-        label3 = Label(frame2, text="「実行ボタン」を押してどこにPDFファイルを保存するかを選択してください", background='white')
+        label3 = Label(frame2, text='「実行ボタン」を押してどこにPDFファイルを保存するかを選択してください', background='white')
         label3.grid(row=2, column=0)
-        label4 = Label(frame2, text="***************************▼出力結果▼*******************************", background='white')
-        label4.grid(row=3, column=0)
-        label5 = Label(frame2, text="===========================▼出力結果▼===============================", background='white')
-        label5.grid(row=4, column=0)
-        
+        label4 = Label(frame2, text='***************************▼出力結果▼*******************************', background='white')
+        label4.grid(row=3, column=0, sticky=W)
+        label5 = Label(frame2, text='総ページ数 :{} 総ファイル数 :{}'.format(total_pages, len(merge_fileslist)), background='white')
+        label5.grid(row=4, column=0, padx=30, sticky=W)
+        label6 = Label(frame2, text='【作成されたPDFファイル名】', background='white')
+        label6.grid(row=5, column=0, padx=30, sticky=W)
+        label6 = Label(frame2, text='≫{}'.format(merged_file), background='white')
+        label6.grid(row=6, column=0, padx=30, sticky=W)
+        label7 = Label(frame2, text='*******************************************************************', background='white')
+        label7.grid(row=7, column=0, sticky=W)
+
         return
 
 if __name__ == "__main__":
